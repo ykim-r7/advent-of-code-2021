@@ -8,34 +8,41 @@ import (
 )
 
 func main() {
-	solvePowerConsumption()
-	solveLifeSupport()
+	lines := loadLines("input")
+	solvePowerConsumption(lines)
+	solveLifeSupport(lines)
 }
 
-var threshold int
-var counts []int
-var lines [][]rune
-
-func solvePowerConsumption() {
-	f, _ := os.Open("input")
+func loadLines(fname string) (lines []string) {
+	f, _ := os.Open(fname)
 	scanner := bufio.NewScanner(f)
-
 	for scanner.Scan() {
-		lines = append(lines, []rune(scanner.Text()))
+		lines = append(lines, scanner.Text())
 	}
+	return
+}
 
-	counts = make([]int, len(lines[0]))
+func sumColumns(lines []string) (sums []int) {
+	sums = make([]int, 0)
+	for _, line := range lines {
+		for i, r := range line {
+			if len(sums) <= i {
+				sums = append(sums, 0)
+			}
 
-	for _, buf := range lines {
-		for i, r := range buf {
 			asNumber, _ := strconv.Atoi(string(r))
-			counts[i] += asNumber
+			sums[i] += asNumber
 		}
 	}
+	return sums
+}
 
+func solvePowerConsumption(lines []string) {
+	counts := sumColumns(lines)
 	gammaBits := ""
 	epsilonBits := ""
-	threshold = len(lines) / 2
+	threshold := len(lines) / 2
+
 	for _, count := range counts {
 		if count > threshold {
 			gammaBits += "1"
@@ -50,45 +57,62 @@ func solvePowerConsumption() {
 	fmt.Printf("Gamma (%d) * Epsilon (%d) = %d\n", gamma, epsilon, gamma*epsilon)
 }
 
-func solveLifeSupport() {
-	var o2 uint64
-	var co2 uint64
+func solveLifeSupport(lines []string) {
+	O2 := getO2(lines)
+	Co2 := getCo2(lines)
 
-	var remainingLines [][]rune = lines
-	for i := 0; i < len(counts); i++ {
-		var savedLines [][]rune
-		mostCommon := mostCommonAtIndex(remainingLines, i, '1')
-		for _, line := range remainingLines {
-			if line[i] == mostCommon {
-				savedLines = append(savedLines, line)
-			}
-		}
-		remainingLines = savedLines
-		if len(remainingLines) == 1 {
-			o2, _ = strconv.ParseUint(string(remainingLines[0]), 2, len(remainingLines[0]))
-			break
-		}
-	}
-
-	remainingLines = lines
-	for i := 0; i < len(counts); i++ {
-		var savedLines [][]rune
-		leastCommon := leastCommonAtIndex(remainingLines, i, '0')
-		for _, line := range remainingLines {
-			if line[i] == leastCommon {
-				savedLines = append(savedLines, line)
-			}
-		}
-		remainingLines = savedLines
-		if len(remainingLines) == 1 {
-			co2, _ = strconv.ParseUint(string(remainingLines[0]), 2, len(remainingLines[0]))
-			break
-		}
-	}
-	fmt.Printf("%d (o2) * %d (co2) = %d\n", o2, co2, o2*co2)
+	fmt.Printf("%d (o2) * %d (co2) = %d\n", O2, Co2, O2*Co2)
 }
 
-func mostCommonAtIndex(lines [][]rune, i int, tiebreaker rune) rune {
+func getO2(lines []string) (O2 uint64) {
+	for i := 0; i < len(lines[0]); i++ {
+		var saved []string
+		for _, line := range lines {
+			if string(line[i]) == mostCommonAtIndex(lines, i) {
+				saved = append(saved, line)
+			}
+		}
+
+		lines = saved
+		if len(lines) == 1 {
+			O2Line := lines[0]
+			O2, _ = strconv.ParseUint(string(O2Line), 2, len(O2Line))
+			break
+		}
+	}
+
+	return
+}
+
+func getCo2(lines []string) (Co2 uint64) {
+	for i := 0; i < len(lines[0]); i++ {
+		var saved []string
+		for _, line := range lines {
+			if string(line[i]) == leastCommonAtIndex(lines, i) {
+				saved = append(saved, line)
+			}
+		}
+
+		lines = saved
+		if len(lines) == 1 {
+			Co2Line := lines[0]
+			Co2, _ = strconv.ParseUint(string(Co2Line), 2, len(Co2Line))
+			break
+		}
+	}
+
+	return
+}
+
+func leastCommonAtIndex(lines []string, i int) (s string) {
+	s = mostCommonAtIndex(lines, i)
+	if s == "1" {
+		return "0"
+	}
+	return "1"
+}
+
+func mostCommonAtIndex(lines []string, i int) string {
 	count := 0
 	for _, line := range lines {
 		if line[i] == '1' {
@@ -98,30 +122,8 @@ func mostCommonAtIndex(lines [][]rune, i int, tiebreaker rune) rune {
 			count--
 		}
 	}
-	if count > 0 {
-		return '1'
-	}
 	if count < 0 {
-		return '0'
+		return "0"
 	}
-	return tiebreaker
-}
-
-func leastCommonAtIndex(lines [][]rune, i int, tiebreaker rune) rune {
-	count := 0
-	for _, line := range lines {
-		if line[i] == '1' {
-			count++
-		}
-		if line[i] == '0' {
-			count--
-		}
-	}
-	if count > 0 {
-		return '0'
-	}
-	if count < 0 {
-		return '1'
-	}
-	return tiebreaker
+	return "1"
 }
